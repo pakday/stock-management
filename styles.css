@@ -1,0 +1,63 @@
+#order_stock_management .inside {
+  padding: 15px;
+  margin: 0;
+}
+
+#stock-management {
+  /* margin: 23px 24px 0 24px; */
+  /* font-family: Verdana, Geneva, Tahoma, sans-serif; */
+}
+
+.stockbox {
+  position: relative;
+  min-width: 255px;
+  border: 1px solid #c3c4c7;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+  background: #fff;
+}
+
+#stock-management table {
+  width: 100%;
+  background: #fff;
+}
+
+#stock-management table th {
+  text-align: left;
+  padding: 1em;
+  font-weight: 400;
+  color: #fff;
+  background: #cc2b37;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+#stock-management table td {
+  padding: 1em 1em 1em;
+  text-align: left;
+  line-height: 1.5em;
+  vertical-align: top;
+  font-size: 13px;
+  border-bottom: 1px solid #f8f8f8;
+}
+
+.instock {
+  color: #7ad03a;
+}
+
+.onbackorder {
+  color: #eaa600;
+}
+
+.outofstock {
+  color: #a44;
+}
+
+#notes {
+  padding: 5px 13px;
+  background-color: #eee;
+  display: inline-block;
+  font-size: 12px;
+}

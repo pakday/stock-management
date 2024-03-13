@@ -1,0 +1,93 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Order Stock Management\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-31 01:02+0000\n"
+"PO-Revision-Date: 2024-03-02 18:48+0000\n"
+"Last-Translator: \n"
+"Language-Team: Dutch\n"
+"Language: nl_NL\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Loco https://localise.biz/\n"
+"X-Loco-Version: 2.6.6; wp-6.4.2\n"
+"X-Domain: stock-management"
+
+#. Author of the plugin
+msgid "Arif Ali"
+msgstr ""
+
+#: stock-management.php:155
+msgid "Available"
+msgstr "Beschikbaar"
+
+#. Unique ID
+#: stock-management.php:42 stock-management.php:51
+msgid "Available Stock Management"
+msgstr "Beschikbaar Voorraadbeheer"
+
+#: stock-management.php:713
+msgid "Enter a custom number for this product."
+msgstr "Voer een aangepast nummer in voor dit product."
+
+#: stock-management.php:711
+msgid "Enter fixed quantity"
+msgstr "Voer een vaste hoeveelheid in."
+
+#: stock-management.php:710
+msgid "Fixed Quantity"
+msgstr "Vaste hoeveelheid"
+
+#: stock-management.php:776
+msgid "Fixed Stock"
+msgstr "Vaste voorraad"
+
+#. Author URI of the plugin
+msgid "https://www.fiverr.com/arifali30/"
+msgstr ""
+
+#: stock-management.php:153
+msgid "Item"
+msgstr "Artikel"
+
+#. Description of the plugin
+msgid "Manage stock in a date range"
+msgstr "Beheer voorraad binnen een datumbereik"
+
+#: stock-management.php:252
+msgid "No"
+msgstr "Nee"
+
+#. Name of the plugin
+msgid "Order Stock Management"
+msgstr ""
+
+#: stock-management.php:154
+msgid "Ordered"
+msgstr "Besteld"
+
+#: stock-management.php:245
+msgid "Range:"
+msgstr "Assortiment"
+
+#: stock-management.php:157
+msgid "Reduced"
+msgstr "Verminderd"
+
+#: stock-management.php:792
+msgid "Set Stock"
+msgstr "Voorraad instellen"
+
+#: stock-management.php:251
+msgid "Stock Reduced:"
+msgstr "Voorraad Verminderd:"
+
+#: stock-management.php:156
+msgid "Unavailable"
+msgstr "Niet beschikbaar"
+
+#: stock-management.php:252
+msgid "Yes"
+msgstr "Ja"
