@@ -30,7 +30,7 @@ function check_for_plugin_update()
 
     $latest_version = get_latest_github_release_version();
 
-    error_log_console("latest_version", $latest_version);
+    // error_log_console("latest_version", $latest_version);
 
     if (version_compare($installed_version, $latest_version, '<')) {
         add_action('admin_notices', 'display_update_notice');
@@ -57,8 +57,8 @@ function current_plugin_version()
 
 function get_latest_github_release_version()
 {
-    $username = 'YahnisElsts';
-    $repository = 'plugin-update-checker';
+    $username = 'pakday';
+    $repository = 'stock-management';
 
     $api_url = "https://api.github.com/repos/{$username}/{$repository}/releases/latest";
 
