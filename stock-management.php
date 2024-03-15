@@ -2,6 +2,7 @@
 /*
 Plugin Name: Order Stock Management
 Version: 1.0.0
+GitHub Plugin URI: https://github.com/pakday/stock-management
 Description: Manage stock in a date range
 Author: Arif Ali
 Author URI: https://www.fiverr.com/arifali30/
@@ -13,6 +14,7 @@ Text Domain: stock-management
 
 include 'helper.php';
 include 'test.php';
+include 'update-plugin.php';
 
 
 // JS
@@ -29,7 +31,7 @@ function hide_payment_option()
 {
 	wp_enqueue_script('hide-payment-option-script', plugin_dir_url(__FILE__) . 'js/hide-payment-option.js', array('jquery'), '1.0', true);
 }
-add_action('wp_enqueue_scripts', 'hide_payment_option', 5);
+add_action('admin_enqueue_scripts', 'hide_payment_option', 5);
 
 
 // CSS
@@ -41,7 +43,7 @@ if (is_admin()) {
 // jquery/ajax
 wp_enqueue_script('ajax-script', get_template_directory_uri(), array('jquery'));
 // load ajax in wordpress
-wp_localize_script('ajax-script', 'my_ajax_object', array('ajax_url' => admin_url('admin-ajax.php')));
+wp_localize_script('ajax-script', 'ajax_object', array('ajax_url' => admin_url('admin-ajax.php')));
 
 // include files
 include(plugin_dir_path(__FILE__) . '/includes/backend.php');
