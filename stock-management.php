@@ -14,7 +14,6 @@ Text Domain: stock-management
 
 include 'helper.php';
 include 'test.php';
-include '/includes/update-plugin.php';
 
 
 // JS
@@ -27,13 +26,6 @@ function enqueue_custom_script_on_checkout()
 add_action('wp_enqueue_scripts', 'enqueue_custom_script_on_checkout');
 
 
-function hide_payment_option()
-{
-	wp_enqueue_script('update-plugin-script', plugin_dir_url(__FILE__) . 'js/update-plugin.js', array('jquery'), '1.0', true);
-}
-add_action('admin_enqueue_scripts', 'hide_payment_option', 5);
-
-
 // CSS
 if (is_admin()) {
 	wp_enqueue_style('sm_style', plugins_url('styles.css', __FILE__), array(), 'all');
@@ -44,9 +36,6 @@ if (is_admin()) {
 wp_enqueue_script('ajax-script', get_template_directory_uri(), array('jquery'));
 // load ajax in wordpress
 wp_localize_script('ajax-script', 'ajax_object', array('ajax_url' => admin_url('admin-ajax.php')));
-
-// include files
-include(plugin_dir_path(__FILE__) . '/includes/update-plugin.php');
 
 
 function custom_order_meta_box()
@@ -270,84 +259,6 @@ function custom_order_page_section($order_data, $order_id)
 	</div>
 <?php
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-function change_order_status_scheduled_daily()
-{
-	$current_date = current_time('mysql');
-	$target_date = date_i18n('j F Y', strtotime($current_date));
-
-	// error_log("ORDERS AUTO EXECUTED AT " . date("Y-m-d H:i:s"));
-
-	$args = array(
-		'status' => array('on-hold', 'processing'),
-		'limit' => -1,
-		'meta_query' => array(
-			array(
-				'key'     => '_section_h21t1g21h2_laatste_huurdag',
-				'value'   => $target_date,
-				'compare' => '='
-			),
-		),
-	);
-
-	$orders = wc_get_orders($args);
-
-	// admin_console($orders, "Orders");
-
-	if ($orders) {
-		foreach ($orders as $order) {
-			$order->update_status('completed', 'Order status updated to completed.');
-		}
-	}
-}
-
-// add_action('admin_init', 'change_order_status_scheduled_daily');
-
-
-register_activation_hook(__FILE__, 'my_plugin_activation');
-
-function my_plugin_activation()
-{
-	$target_time = '23:59:59';
-	$adjusted_time = adjustTimeForTimezone($target_time);
-
-	wp_schedule_event(strtotime($adjusted_time), 'daily', 'daily_event_hook');
-}
-
-add_action('daily_event_hook', 'change_order_status_scheduled_daily');
-
-
-
-function adjustTimeForTimezone($target_time)
-{
-	$site_timezone = wp_timezone();
-
-	// Create DateTime objects for target time and site timezone
-	$target_datetime = DateTime::createFromFormat('H:i:s', $target_time);
-
-	// Get the site timezone offset as seconds
-	$offset_seconds = $site_timezone->getOffset($target_datetime);
-
-	// Subtract site timezone offset from target time
-	$target_datetime->sub(new DateInterval('PT' . abs($offset_seconds) . 'S'));
-
-	return $target_datetime->format('H:i:s');
-}
-
-
-
 
 
 
