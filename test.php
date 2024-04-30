@@ -1,6 +1,6 @@
 <?php
-add_action('woocommerce_page_wc-orders', 'update_modified_date');
 
+// add_action('woocommerce_page_wc-orders', 'update_modified_date');
 function update_modified_date()
 {
     $product_id = 478;

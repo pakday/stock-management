@@ -14,7 +14,7 @@ Text Domain: stock-management
 
 include 'helper.php';
 include 'test.php';
-include 'update-plugin.php';
+include '/includes/update-plugin.php';
 
 
 // JS
@@ -29,7 +29,7 @@ add_action('wp_enqueue_scripts', 'enqueue_custom_script_on_checkout');
 
 function hide_payment_option()
 {
-	wp_enqueue_script('hide-payment-option-script', plugin_dir_url(__FILE__) . 'js/hide-payment-option.js', array('jquery'), '1.0', true);
+	wp_enqueue_script('update-plugin-script', plugin_dir_url(__FILE__) . 'js/update-plugin.js', array('jquery'), '1.0', true);
 }
 add_action('admin_enqueue_scripts', 'hide_payment_option', 5);
 
@@ -46,7 +46,7 @@ wp_enqueue_script('ajax-script', get_template_directory_uri(), array('jquery'));
 wp_localize_script('ajax-script', 'ajax_object', array('ajax_url' => admin_url('admin-ajax.php')));
 
 // include files
-include(plugin_dir_path(__FILE__) . '/includes/backend.php');
+include(plugin_dir_path(__FILE__) . '/includes/update-plugin.php');
 
 
 function custom_order_meta_box()

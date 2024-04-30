@@ -51,7 +51,7 @@ function apply_update()
 }
 
 
-add_action('admin_init', 'display_update_notice');
+// add_action('admin_init', 'display_update_notice');
 function display_update_notice()
 {
 ?>
