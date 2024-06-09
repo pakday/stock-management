@@ -37,8 +37,8 @@ msgid "Enter fixed quantity"
 msgstr "Voer een vaste hoeveelheid in."
 
 #: test.php:35
-msgid "First Rental Day"
-msgstr "Eerste Huurdag"
+msgid "First Rental Day Eerste Huurdag"
+msgstr ""
 
 #: stock-management.php:635
 msgid "Fixed Quantity"

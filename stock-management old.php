@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: Order Stock Management
+Plugin Name: Order Stock Management 2
 Version: 1.0.0
 GitHub Plugin URI: https://github.com/pakday/stock-management
 Description: Manage stock in a date range
