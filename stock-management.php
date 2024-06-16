@@ -11,16 +11,291 @@ License URI: https://www.gnu.org/licenses/gpl-2.0.html
 Text Domain: stock-management
 */
 
+// update processing status time
+// reset stock in product
+// change dates meta data with new plugin
+// add hooks when updates happen in data ranges. main program
 
 include 'helper.php';
-include 'test.php';
+include 'temp.php';
 
-// Local site keys
-$first_rental_day_meta_key = '_section_hh2c1aj2q4_first_rental_day';
-$last_rental_day_meta_key = '_section_hh2c1aj2q4_last_rental_day';
-// Client site keys
-// $first_rental_day_meta_key = '_section_h21t1g21h2_eerste_huurdag';
-// $last_rental_day_meta_key = '_section_h21t1g21h2_laatste_huurdag';
+// global variables
+$PLUGIN_ENV = "dev";
+$first_rental_date_meta_key = 'eerste_huurdag';
+$return_rental_date_meta_key = 'retourdatum';
+
+
+// Run every time status change
+add_action('woocommerce_order_status_changed', 'save_last_order_status_change_time', 10, 1);
+function save_last_order_status_change_time($order_id)
+{
+	update_post_meta($order_id, '_order_status_last_modified', current_time('mysql'));
+}
+
+// add_action('admin_init', 'set_available_stock');
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Set default order status as on-hold
+
+add_action('woocommerce_thankyou', 'custom_change_order_status_to_on_hold', 10, 1);
+
+function custom_change_order_status_to_on_hold($order_id)
+{
+	if (!$order_id) {
+		return;
+	}
+
+	$order = wc_get_order($order_id);
+
+	// Change order status to 'on-hold'
+	$order->update_status('on-hold', 'Order status changed to on-hold by custom function.');
+}
+
+
+
+
+
+
+
+
+
+
+/*
+ *
+ * 
+ * 
+ * HOOKS
+ * 
+ *
+ * 
+ */
+
+
+
+
+// // run on new order
+// // add_action('woocommerce_thankyou', 'update_available_unavailable_stock');
+// // add_action('woocommerce_order_details_after_order_table', 'update_available_unavailable_stock');
+// add_action('woocommerce_new_order', 'update_available_unavailable_stock');
+
+// // run on order items quantity change or on saving order
+// add_action('woocommerce_new_order_item', 'update_available_unavailable_stock');
+
+// // run after product is saved
+// add_action('save_post', 'run_on_product_save', 10, 2);
+// function run_on_product_save($product_id, $product)
+// {
+// 	if ($product->post_type === 'product') {
+// 		$fixed_stock = get_post_meta($product_id, '_fixed_stock', true);
+
+// 		update_available_unavailable_stock();
+
+// 		// error_log("Product Fixed Quantity: $fixed_stock");
+// 	}
+// }
+
+// // run on orders trash (when we restore order we change order status and again function runs)
+// add_action('woocommerce_trash_order', 'run_on_trash');
+// function run_on_trash($order_id)
+// {
+// 	$order = wc_get_order($order_id);
+// 	$trash_meta_status = $order->get_meta('_wp_trash_meta_status');
+
+// 	if ($trash_meta_status === 'wc-processing') {
+// 		reset_fixed_stock($order_id);
+
+// 		// error_log_console("trash_meta_status: ", $trash_meta_status);
+// 	}
+// }
+
+
+
+
+add_action('admin_init', 'all_orders');
+
+function all_orders()
+{
+	$args = array(
+		'limit' => -1,
+		'status' => 'any',
+		'meta_key' => '_order_status_last_modified',
+		'orderby' => 'meta_value',
+		'order' => 'ASC'
+	);
+	$orders = wc_get_orders($args);
+
+	foreach ($orders as $order) {
+		$order_id = $order->get_id();
+
+		set_available_unavailable_stock($order_id);
+	}
+}
+
+// function run_all_overlap_orders($order_id)
+// {
+// 	$current_order = wc_get_order($order_id);
+// }
+
+function set_available_unavailable_stock($order_id)
+{
+	// $order_id = 923;
+	$current_order = wc_get_order($order_id);
+	$current_order_status = $current_order->get_status();
+	$current_order_status_last_modified = $current_order->get_meta('_order_status_last_modified');
+
+	$overlap_orders = find_overlap_orders($current_order);
+
+	// error_log_console("overlap_product_id: ", $overlap_orders);
+
+	foreach ($current_order->get_items() as $current_item_id => $current_item) {
+		$current_product_id = $current_item->get_product_id();
+		$current_product_fixed_stock = get_post_meta($current_product_id, '_fixed_stock', true);
+		$current_ordered_quantity = $current_item->get_quantity();
+
+		$item_total_available = [];
+		$overlapped_items = [];
+
+		foreach ($overlap_orders as $overlap_order) {
+			$overlap_order_status = $overlap_order->get_status();
+			$overlap_order_id = $overlap_order->get_id();
+			$order_status_last_modified = $overlap_order->get_meta('_order_status_last_modified');
+
+			global $first_rental_date_meta_key;
+			global $return_rental_date_meta_key;
+			$overlap_start_date = $overlap_order->get_meta($first_rental_date_meta_key);
+			$overlap_end_date = $overlap_order->get_meta($return_rental_date_meta_key);
+
+			if ($overlap_order_status == "processing") {
+				foreach ($overlap_order->get_items() as $overlap_item_id => $overlap_item) {
+					$overlap_product_id = $overlap_item->get_product_id();
+					$overlap_used_stock = intval(wc_get_order_item_meta($overlap_item_id, '_used_stock', true));
+					$available_stock = intval(wc_get_order_item_meta($overlap_item_id, '_available_stock_2', true));
+
+					if (!isset($item_total_available[$overlap_product_id])) {
+						$item_total_available[$overlap_product_id] = 0;
+					}
+
+					$item_total_available[$overlap_product_id] += $overlap_used_stock;
+
+					// testing
+					if ($current_product_id == $overlap_product_id) {
+						$overlapped_items[] = array(
+							"order_id" => $overlap_order_id,
+							"order_status" => $overlap_order_status,
+							"used_stock" => $overlap_used_stock,
+							"available_stock" => $available_stock,
+							"start_date" => $overlap_start_date,
+							"end_date" => $overlap_end_date,
+							"order_status_last_modified" => $order_status_last_modified,
+						);
+					}
+				}
+			}
+		}
+
+
+		$item_total_available_value = isset($item_total_available[$current_product_id]) ? $item_total_available[$current_product_id] : 0;
+
+		$current_available_stock = max($current_product_fixed_stock - $item_total_available_value, 0);
+		$current_used_stock = $current_available_stock >= $current_ordered_quantity ? $current_ordered_quantity : $current_available_stock;
+
+		wc_update_order_item_meta($current_item_id, '_available_stock_2', $current_available_stock);
+
+		if ($current_order_status == "processing") {
+			wc_update_order_item_meta($current_item_id, '_used_stock', $current_used_stock);
+		}
+
+		global $PLUGIN_ENV;
+		if ($PLUGIN_ENV == 'dev') {
+			$order_data = array(
+				'product_fixed_stock' => intval($current_product_fixed_stock),
+				'total_used_stock' => $item_total_available_value,
+				'available_stock' => $current_available_stock . ' (' . $current_product_fixed_stock . '-' . $item_total_available_value . ')',
+				'used_stock' => $current_used_stock,
+				"order_status_last_modified" => $current_order_status_last_modified,
+				'processing_overlapped_items' => (is_array($overlapped_items) && !empty($overlapped_items)) ? $overlapped_items : 'none',
+			);
+
+			wc_update_order_item_meta($current_item_id, '_dependent_stock', $order_data);
+		}
+	}
+}
+
+function find_overlap_orders($current_order)
+{
+	global $first_rental_date_meta_key;
+	global $return_rental_date_meta_key;
+
+	$current_start_date = $current_order->get_meta($first_rental_date_meta_key);
+	$current_end_date = $current_order->get_meta($return_rental_date_meta_key);
+
+	$current_start_timestamp = strtotime($current_start_date);
+	$current_end_timestamp = strtotime($current_end_date);
+
+	$args = array(
+		'limit' => -1,
+		'status' => 'any',
+		'meta_key' => '_order_status_last_modified',
+		'orderby' => 'meta_value',
+		'order' => 'ASC'
+	);
+	$orders = wc_get_orders($args);
+
+	// error_log_console("current_start_date: ", $current_start_date);
+	// error_log_console("current_end_date: ", $current_end_date);
+	// error_log_console("current_end_timestamp: ", $current_end_timestamp);
+	// error_log_console("current_start_timestamp: ", $current_start_timestamp);
+
+	// Initialize an array to store overlapping orders
+	$overlapping_orders = array();
+
+	foreach ($orders as $overlap_order) {
+		// Exclude the order used for checking overlap
+		if ($overlap_order->get_id() == $current_order->get_id()) {
+			continue;
+		}
+
+		$rental_start_date = $overlap_order->get_meta($first_rental_date_meta_key);
+		$rental_end_date = $overlap_order->get_meta($return_rental_date_meta_key);
+
+		$rental_start_timestamp = strtotime($rental_start_date);
+		$rental_end_timestamp = strtotime($rental_end_date);
+
+		// Check if the rental period overlaps with the check period
+		if (($current_start_timestamp >= $rental_start_timestamp && $current_start_timestamp <= $rental_end_timestamp) ||
+			($current_end_timestamp >= $rental_start_timestamp && $current_end_timestamp <= $rental_end_timestamp) ||
+			($current_start_timestamp <= $rental_start_timestamp && $current_end_timestamp >= $rental_end_timestamp)
+		) {
+			$overlapping_orders[] = $overlap_order;
+		}
+	}
+
+	return $overlapping_orders;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 // JS
@@ -73,70 +348,7 @@ function order_stock_management_callback($post)
 {
 	$order_id = $post->ID;
 
-	$order_data = get_order_items_data($order_id);
-
-	custom_order_page_section($order_data, $order_id);
-}
-
-
-
-
-
-
-
-function get_order_items_data($order_id)
-{
-	$order = wc_get_order($order_id);
-
-	// admin_console($order, "order");
-	global $first_rental_day_meta_key;
-	global $last_rental_day_meta_key;
-
-	$start_date = $order->get_meta($first_rental_day_meta_key);
-	$last_date = $order->get_meta($last_rental_day_meta_key);
-
-	// admin_console($start_date, "start_date");
-	// admin_console($last_date, "last_date");
-
-	$order_data = [];
-
-	foreach ($order->get_items() as $item_id => $item) {
-		$product_id = $item->get_product_id();
-		$product = wc_get_product($product_id);
-
-		// admin_console($item, "item");
-		// admin_console($product, "product");
-
-		$custom_number_field_value = get_post_meta($product_id, '_fixed_stock', true);
-		// admin_console($custom_number_field_value, "_fixed_stock");
-
-		$fixed_stock = get_post_meta($product_id, '_fixed_stock', true);
-
-		$ordered_quantity = $item->get_quantity();
-		$product_name = $product->get_name();
-		$stock_status = $product->get_stock_status();
-		$available_stock = wc_get_order_item_meta($item_id, '_available_stock', true);
-		$unavailable_stock = wc_get_order_item_meta($item_id, '_unavailable_stock', true);
-		$total_available_stock = wc_get_order_item_meta($item_id, '_total_available_stock', true);
-
-		$stock_quantity = $product->get_stock_quantity();
-
-		$order_data[] = array(
-			'product_id' => $product_id,
-			'product_name' => $product_name,
-			'stock_status' => $stock_status,
-			'ordered_quantity' => $ordered_quantity,
-			'available_stock' => $available_stock,
-			'unavailable_stock' => $unavailable_stock,
-			'stock_quantity' => $stock_quantity,
-			'fixed_stock' => $fixed_stock,
-			'start_date' => $start_date,
-			'last_date' => $last_date,
-			'total_available_stock' => $total_available_stock
-		);
-	}
-
-	return $order_data;
+	custom_order_page_section($order_id);
 }
 
 
@@ -147,20 +359,21 @@ function get_order_items_data($order_id)
 
 
 
-
-function custom_order_page_section($order_data, $order_id)
+function custom_order_page_section($order_id)
 {
+	global $PLUGIN_ENV;
+
 	$order = wc_get_order($order_id);
 
+	// Order date range
+	global $first_rental_date_meta_key;
+	global $return_rental_date_meta_key;
+	$start_date = $order->get_meta($first_rental_date_meta_key);
+	$last_date = $order->get_meta($return_rental_date_meta_key);
+
+	// Order status
 	$order_status = $order->get_status();
 	$order_status_name = wc_get_order_status_name($order_status);
-
-	global $first_rental_day_meta_key;
-	global $last_rental_day_meta_key;
-
-	$start_date = $order->get_meta($first_rental_day_meta_key);
-	$last_date = $order->get_meta($last_rental_day_meta_key);
-
 ?>
 	<div id="stock-management" class="stockbox">
 		<table cellpadding="0" cellspacing="0">
@@ -170,28 +383,21 @@ function custom_order_page_section($order_data, $order_id)
 					<th><?= __('Ordered', 'stock-management'); ?></th>
 					<th><?= __('Available', 'stock-management'); ?></th>
 					<th><?= __('Unavailable', 'stock-management'); ?></th>
-					<?php echo ($order_status == 'processing') ? '<th>' . __('Reduced', 'stock-management') . '</th>' : ''; ?>
-					<th>Extra</th>
+					<?php echo ($PLUGIN_ENV == 'dev') ? '<th>Extra</th>' : ''; ?>
 				</tr>
 			</thead>
 			<tbody>
 				<?php
-				// admin_console($order_data);
+				foreach ($order->get_items() as $item_id => $item) {
+					$product_id = $item->get_product_id();
+					$product = wc_get_product($product_id);
+					$product_name = $product->get_name();
+					$ordered_quantity = $item->get_quantity();
 
-				foreach ($order_data as $product_data) {
-					$stock_quantity = $product_data['stock_quantity'];
-					$fixed_stock = $product_data['fixed_stock'];
-					$product_id = $product_data['product_id'];
-					$product_name = $product_data['product_name'];
-					$ordered_quantity = $product_data['ordered_quantity'];
-					$total_available_stock = $product_data['total_available_stock'];
-					$available_stock = $product_data['available_stock'];
-					$unavailable_stock = $product_data['unavailable_stock'];
-					$start_date = $product_data['start_date'];
-					$last_date = $product_data['last_date'];
+					$available_stock = wc_get_order_item_meta($item_id, '_available_stock_2', true);
+					$unavailable_stock = max(0, $ordered_quantity - (int)$available_stock);
 
-					$actual_available_stock = max(0, min($ordered_quantity, $total_available_stock));
-					$actual_unavailable_stock = max(0, $ordered_quantity - (int)$total_available_stock);
+					$data_flow = wc_get_order_item_meta($item_id, '_dependent_stock', true);
 				?>
 					<tr>
 						<td width="40%">
@@ -204,51 +410,25 @@ function custom_order_page_section($order_data, $order_id)
 						</td>
 						<td>
 							<span style="color: green; font-weight: bold;">
-								<?php echo $total_available_stock ?>
+								<?php echo $available_stock ?>
 							</span>
 						</td>
 						<td>
 							<span style="color: red; font-weight: bold;">
-								<?php echo $actual_unavailable_stock ?>
+								<?php echo $unavailable_stock ?>
 							</span>
 						</td>
 						<?php
-						if ($order_status == 'processing') {
+						if ($PLUGIN_ENV == 'dev') {
 						?>
 							<td>
 								<span>
-									<?php echo $available_stock ?>
+									<?php beauty_console($data_flow); ?>
 								</span>
 							</td>
 						<?php
 						}
 						?>
-						<td>
-							<div>
-								<span style="font-weight: bold;">Stock: </span>
-								<?php echo $stock_quantity ?>
-							</div>
-							<div>
-								<span style="font-weight: bold;">Fixed Stock: </span>
-								<?php echo $fixed_stock ?>
-							</div>
-							<div>
-								<span style="font-weight: bold;">Ordered Quantity: </span>
-								<?php echo $ordered_quantity ?>
-							</div>
-							<div>
-								<span style="font-weight: bold;">Available Stock: </span>
-								<?php echo $available_stock ?>
-							</div>
-							<div>
-								<span style="font-weight: bold;">Unavailable Stock: </span>
-								<?php echo $unavailable_stock ?>
-							</div>
-							<div>
-								<span style="font-weight: bold;">Available Stock In Range: </span>
-								<?php echo $actual_available_stock ?>
-							</div>
-						</td>
 					</tr>
 				<?php
 				}
@@ -264,9 +444,8 @@ function custom_order_page_section($order_data, $order_id)
 			<span><?php echo $last_date ?></span>
 		</span>
 		<span style="margin-left: 10px">
-			<span style="font-weight: bold;"><?= __('Stock Reduced:', 'stock-management'); ?> </span>
-			<span><?php echo ($order_status == 'processing' ? __('Yes', 'stock-management') : __('No', 'stock-management')) ?></span>
-			<span>( <?php echo $order_status_name ?> )</span>
+			<span style="font-weight: bold;"><?= __('Status:', 'stock-management'); ?> </span>
+			<span><?php echo $order_status_name ?></span>
 		</span>
 	</div>
 <?php
@@ -275,360 +454,27 @@ function custom_order_page_section($order_data, $order_id)
 
 
 
-
-
-
-
-
-
-/*
- *
- * 
- * 
- * HOOKS
- * 
- *
- * 
- */
-
-
-// run on status change
-add_action('woocommerce_order_status_changed', 'run_everytime_status_changed', 10, 4);
-
-// run on new order
-// add_action('woocommerce_thankyou', 'update_available_unavailable_stock');
-// add_action('woocommerce_order_details_after_order_table', 'update_available_unavailable_stock');
-add_action('woocommerce_new_order', 'update_available_unavailable_stock');
-
-// run on order items quantity change or on saving order
-add_action('woocommerce_new_order_item', 'update_available_unavailable_stock');
-
-// run after product is saved
-add_action('save_post', 'run_on_product_save', 10, 2);
-function run_on_product_save($product_id, $product)
+function beauty_console($data)
 {
-	if ($product->post_type === 'product') {
-		$fixed_stock = get_post_meta($product_id, '_fixed_stock', true);
+	ob_start();
+?>
+	<pre style="max-height: 300px; margin: 0; max-width: 400px; overflow: auto; border:1px solid #aaa;">
+		<?php
+		echo '<style>code { background-color: #fff; }</style>';
+		echo '<code style="background-color: #fff;">' . highlight_string("<?php\n" . var_export($data, true) . "", true) . '</code>';
+		?>
+    </pre>
+<?php
+	$output = ob_get_clean();
 
-		update_available_unavailable_stock();
-
-		// error_log("Product Fixed Quantity: $fixed_stock");
-	}
-}
-
-// run on orders trash (when we restore order we change order status and again function runs)
-add_action('woocommerce_trash_order', 'run_on_trash');
-function run_on_trash($order_id)
-{
-	$order = wc_get_order($order_id);
-	$trash_meta_status = $order->get_meta('_wp_trash_meta_status');
-
-	if ($trash_meta_status === 'wc-processing') {
-		reset_fixed_stock($order_id);
-
-		// error_log_console("trash_meta_status: ", $trash_meta_status);
-	}
-}
-
-
-
-
-function run_everytime_status_changed($order_id, $old_status, $new_status, $order)
-{
-	// error_log_console('*********************** ON STATUS CHANGED', '');
-
-	$allowed_statuses = [
-		'cancelled',
-		'refunded',
-		'completed',
-		'pending',
-		'on-hold',
-		'failed',
-		'ywraq-new',
-		'ywraq-pending',
-		'ywraq-expired',
-		'ywraq-accepted',
-		'ywraq-rejected',
-		'trash'
-	];
-
-	if ($new_status == 'processing') {
-		extract_stock_on_processing($order_id);
-	} elseif ($old_status == 'processing' && in_array($new_status, $allowed_statuses)) {
-		reset_fixed_stock($order_id);
-	}
+	echo $output;
 }
 
 
 
 
 
-function extract_stock_on_processing($order_id)
-{
-	// error_log('*********************** Stock Extracted On Processing');
 
-	$order = wc_get_order($order_id);
-
-	if ($order) {
-
-		foreach ($order->get_items() as $item_id => $item) {
-			$product_id = $item->get_product_id();
-			$fixed_stock = get_post_meta($product_id, '_fixed_stock', true);
-			$ordered_quantity = $item->get_quantity();
-
-
-			// update available, unavailable stock
-			$available_stock = max(0, min($ordered_quantity, $fixed_stock));
-			$unavailable_stock = max(0, $ordered_quantity - (int)$fixed_stock);
-
-			wc_update_order_item_meta($item_id, '_available_stock', $available_stock);
-			wc_update_order_item_meta($item_id, '_unavailable_stock', $unavailable_stock);
-
-
-			// update fixed stock
-			$updated_fixed_stock = (int)$fixed_stock - (int)$ordered_quantity;
-
-			if ($updated_fixed_stock <= 0) {
-				update_post_meta($product_id, '_fixed_stock', 0);
-			} else {
-				update_post_meta($product_id, '_fixed_stock', $updated_fixed_stock);
-			}
-		}
-
-		update_available_unavailable_stock();
-	}
-}
-
-
-
-
-
-function reset_fixed_stock($order_id)
-{
-	// error_log_console('*********************** Reset Fixed Stock', '');
-
-	$order = wc_get_order($order_id);
-
-	if ($order) {
-
-		foreach ($order->get_items() as $item_id => $item) {
-			$product_id = $item->get_product_id();
-			$fixed_stock = get_post_meta($product_id, '_fixed_stock', true);
-			$ordered_quantity = $item->get_quantity();
-
-			// add available stock back to 
-			$available_stock = wc_get_order_item_meta($item_id, '_available_stock', true);
-			$updated_fixed_stock = (int)$fixed_stock + (int)$available_stock;
-			update_post_meta($product_id, '_fixed_stock', $updated_fixed_stock);
-		}
-
-		update_available_unavailable_stock();
-	}
-}
-
-
-
-
-
-function get_orders_by_statuses_dates()
-{
-	$args_processing = array(
-		'limit'       => -1,
-		'status'      => 'processing',
-		'orderby'     => 'date',
-		'order'       => 'ASC',
-	);
-
-	$args_other = array(
-		'limit'       => -1,
-		'status'      => array(
-			'pending',
-			'on-hold',
-			'completed',
-			'cancelled',
-			'refunded',
-			'failed',
-			'ywraq-new',
-			'ywraq-pending',
-			'ywraq-expired',
-			'ywraq-accepted',
-			'ywraq-rejected',
-		),
-		'orderby'     => 'date',
-		'order'       => 'ASC',
-	);
-
-	$orders_processing = wc_get_orders($args_processing) ?? [];
-	$orders_other = wc_get_orders($args_other) ?? [];
-
-	$orders = array_merge($orders_processing, $orders_other);
-
-	// Filter out orders with missing IDs
-	$orders = array_filter($orders, function ($order) {
-		return is_object($order) && $order->get_id();
-	});
-
-	return $orders;
-}
-
-
-
-
-
-function get_total_available_stock()
-{
-	// error_log('*********************** Get Total Available Stock of Product Within Date Range');
-
-	$args = array(
-		'limit'       => -1,
-		// 'status'      => 'processing',
-		'orderby'     => 'date',
-		'order'       => 'ASC',
-	);
-
-	$orders = wc_get_orders($args);
-
-	if ($orders) {
-		foreach ($orders as $current_order) {
-			$sum_old_available_stock = array();
-			$sum_old_ = array();
-
-			global $first_rental_day_meta_key;
-			global $last_rental_day_meta_key;
-
-			$current_order_status = $current_order->get_status();
-			$current_order_id = $current_order->get_id();
-			$current_start_date = $current_order->get_meta($first_rental_day_meta_key);
-			$current_last_date = $current_order->get_meta($last_rental_day_meta_key);
-			// $current_stock = get_post_meta($product_id, '_fixed_stock', true);
-			$current_order_items = $current_order->get_items();
-
-			foreach ($current_order_items as $current_item_id => $current_item) {
-				$product_id = $current_item->get_product_id();
-
-				$sum_old_[$product_id] = 0;
-			}
-
-			$order_id = $current_order->get_id();
-			// error_log_console("************* order_id ", $order_id);
-
-			// sum of all reduced stock from available stock
-			foreach ($orders as $order) {
-
-				$order_items = $order->get_items();
-				$order_status = $order->get_status();
-				$first_date = $order->get_meta($first_rental_day_meta_key);
-				$last_date = $order->get_meta($last_rental_day_meta_key);
-
-				if ($order_status === 'processing') {
-					// error_log_console("******************* last_date ", $last_date);
-
-					if (strtotime($current_start_date) > strtotime($last_date) || strtotime($current_last_date) < strtotime($first_date)) {
-						foreach ($order_items as $item_id => $item) {
-							$product_id = $item->get_product_id();
-
-							$old_available_stock = wc_get_order_item_meta($item_id, '_available_stock', true);
-
-							foreach ($sum_old_ as $current_product_id => $current_item) {
-								if ($product_id == $current_product_id) {
-									$sum_old_[$product_id] += intval($old_available_stock);
-								}
-							}
-						}
-					}
-				}
-			}
-
-
-			$total_available_stock = array();
-
-			foreach ($current_order_items as $current_item_id => $current_item) {
-				$product_id = $current_item->get_product_id();
-				$current_stock = get_post_meta($product_id, '_fixed_stock', true);
-				$current_available_stock = wc_get_order_item_meta($current_item_id, '_available_stock', true);
-
-				if ($current_order_status == 'processing') {
-					$total_stock = (int)$sum_old_[$product_id] + (int)$current_stock + (int)$current_available_stock;
-				} else {
-					$total_stock = (int)$sum_old_[$product_id] + (int)$current_stock;
-				}
-
-				$total_available_stock[$product_id] = $total_stock;
-
-				wc_update_order_item_meta($current_item_id, '_total_available_stock', $total_stock);
-			}
-		}
-	}
-}
-
-
-
-
-
-function update_available_unavailable_stock()
-{
-	// error_log('*********************** Available Unavailable Values Updated');
-
-	$orders = get_orders_by_statuses_dates();
-
-	if ($orders) {
-		// error_log_console('orders', $orders);
-
-		foreach ($orders as $order) {
-			$order_status = $order->get_status();
-			$order_items = $order->get_items();
-			$order_id = $order->get_id();
-
-			// error_log_console('*********** order_id: ' . $order_id);
-
-			if ($order_status == 'processing') {
-				foreach ($order_items as $item_id => $item) {
-					$product_id = $item->get_product_id();
-					$ordered_quantity = $item->get_quantity();
-					$old_fixed_stock = get_post_meta($product_id, '_fixed_stock', true);
-					$old_available_stock = wc_get_order_item_meta($item_id, '_available_stock', true);
-
-					$total_available_stock = wc_get_order_item_meta($item_id, '_total_available_stock', true);
-
-					$new_fixed_stock = (int)$old_fixed_stock + (int)$old_available_stock;
-
-					// update available, unavailable stock
-					$available_stock = max(0, min($ordered_quantity, $new_fixed_stock));
-					$unavailable_stock = max(0, $ordered_quantity - (int)$new_fixed_stock);
-
-					wc_update_order_item_meta($item_id, '_available_stock', $available_stock);
-					wc_update_order_item_meta($item_id, '_unavailable_stock', $unavailable_stock);
-
-					// update fixed stock
-					$updated_fixed_stock = $new_fixed_stock - $ordered_quantity;
-					// error_log_console('xxxxxxxxxxxxxxx updated_fixed_stock: ' . $updated_fixed_stock);
-
-					if ($updated_fixed_stock < 0) {
-						update_post_meta($product_id, '_fixed_stock', 0);
-					} else {
-						update_post_meta($product_id, '_fixed_stock', $updated_fixed_stock);
-					}
-				}
-			} else {
-				foreach ($order_items as $item_id => $item) {
-					$product_id = $item->get_product_id();
-					$fixed_stock = get_post_meta($product_id, '_fixed_stock', true);
-					$ordered_quantity = $item->get_quantity();
-
-
-					// update available, unavailable stock
-					$available_stock = max(0, min($ordered_quantity, $fixed_stock));
-					$unavailable_stock = max(0, $ordered_quantity - (int)$fixed_stock);
-
-					wc_update_order_item_meta($item_id, '_available_stock', $available_stock);
-					wc_update_order_item_meta($item_id, '_unavailable_stock', $unavailable_stock);
-				}
-			}
-		}
-	}
-
-	get_total_available_stock();
-}
 
 
 
@@ -681,40 +527,9 @@ function save_fixed_stock_product_data($product_id)
 
 
 
-// create date range for an order manually 
-
-// add_action('woocommerce_process_shop_order_meta', 'add_custom_dates_on_order_create', 10, 1);
-
-function add_custom_dates_on_order_create($order_id)
-{
-	// error_log('*********************** Set Date Range Manually');
-
-	$first_date = '2 February 2024';
-	$last_date = '8 February 2024';
-
-	$order = wc_get_order($order_id);
-
-	global $first_rental_day_meta_key;
-	global $last_rental_day_meta_key;
-
-	$order->update_meta_data($first_rental_day_meta_key, $first_date);
-	$order->update_meta_data($last_rental_day_meta_key, $last_date);
-
-	$order->save();
-}
 
 
-
-
-
-
-
-
-
-
-
-
-// add column in products table
+// Show custom column in products table
 function custom_products_column_header($columns)
 {
 	$columns['fixed_stock'] = __('Fixed Stock', 'stock-management');
@@ -765,6 +580,4 @@ function load_default_nl_textdomain()
 	$mo_file = $plugin_path . '/languages/stock-management-' . $locale . '.mo';
 
 	load_textdomain('stock-management', $mo_file);
-
-	// error_log("mo_file " . $mo_file);
 }

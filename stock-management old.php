@@ -1,16 +1,4 @@
 <?php
-/*
-Plugin Name: Order Stock Management 2
-Version: 1.0.0
-GitHub Plugin URI: https://github.com/pakday/stock-management
-Description: Manage stock in a date range
-Author: Arif Ali
-Author URI: https://www.fiverr.com/arifali30/
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
-Text Domain: stock-management
-*/
-
 
 include 'helper.php';
 include 'test.php';
