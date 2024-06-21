@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: Order Stock Management\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2024-01-31 01:02+0000\n"
-"PO-Revision-Date: 2024-05-24 22:41+0000\n"
+"PO-Revision-Date: 2024-06-18 11:20+0000\n"
 "Last-Translator: \n"
 "Language-Team: Dutch\n"
 "Language: nl_NL\n"
@@ -19,32 +19,33 @@ msgstr ""
 msgid "Arif Ali"
 msgstr ""
 
-#: stock-management.php:159
+#: stock-management old.php:159 stock-management.php:384
 msgid "Available"
 msgstr "Beschikbaar"
 
 #. Unique ID
-#: stock-management.php:46 stock-management.php:55
+#: stock-management old.php:41 stock-management old.php:50
+#: stock-management.php:328 stock-management.php:337
 msgid "Available Stock Management"
 msgstr "Beschikbaar Voorraadbeheer"
 
-#: stock-management.php:638
+#: stock-management old.php:642 stock-management.php:500
 msgid "Enter a custom number for this product."
 msgstr "Voer een aangepast nummer in voor dit product."
 
-#: stock-management.php:636
+#: stock-management old.php:640 stock-management.php:498
 msgid "Enter fixed quantity"
 msgstr "Voer een vaste hoeveelheid in."
 
-#: test.php:35
+#: test.php:106
 msgid "First Rental Day"
 msgstr "Eerste Huurdag"
 
-#: stock-management.php:635
+#: stock-management old.php:639 stock-management.php:497
 msgid "Fixed Quantity"
 msgstr "Vaste hoeveelheid"
 
-#: stock-management.php:701
+#: stock-management old.php:708 stock-management.php:535
 msgid "Fixed Stock"
 msgstr "Vaste voorraad"
 
@@ -52,11 +53,11 @@ msgstr "Vaste voorraad"
 msgid "https://www.fiverr.com/arifali30/"
 msgstr ""
 
-#: stock-management.php:157
+#: stock-management old.php:157 stock-management.php:382
 msgid "Item"
 msgstr "Artikel"
 
-#: test.php:36
+#: test.php:107
 msgid "Last Rental Day"
 msgstr "Laatste Huurdag"
 
@@ -64,7 +65,7 @@ msgstr "Laatste Huurdag"
 msgid "Manage stock in a date range"
 msgstr "Beheer voorraad binnen een datumbereik"
 
-#: stock-management.php:256
+#: stock-management old.php:256
 msgid "No"
 msgstr "Nee"
 
@@ -72,30 +73,34 @@ msgstr "Nee"
 msgid "Order Stock Management"
 msgstr ""
 
-#: stock-management.php:158
+#: stock-management old.php:158 stock-management.php:383
 msgid "Ordered"
 msgstr "Besteld"
 
-#: stock-management.php:249
+#: stock-management old.php:249 stock-management.php:441
 msgid "Range:"
 msgstr "Assortiment"
 
-#: stock-management.php:161
+#: stock-management old.php:161
 msgid "Reduced"
 msgstr "Verminderd"
 
-#: stock-management.php:717
+#: stock-management old.php:724 stock-management.php:551
 msgid "Set Stock"
 msgstr "Voorraad instellen"
 
-#: stock-management.php:255
+#: stock-management.php:447
+msgid "Status:"
+msgstr "Toestand"
+
+#: stock-management old.php:255
 msgid "Stock Reduced:"
 msgstr "Voorraad Verminderd:"
 
-#: stock-management.php:160
+#: stock-management old.php:160 stock-management.php:385
 msgid "Unavailable"
 msgstr "Niet beschikbaar"
 
-#: stock-management.php:256
+#: stock-management old.php:256
 msgid "Yes"
 msgstr "Ja"

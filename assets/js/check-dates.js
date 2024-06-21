@@ -1,10 +1,8 @@
 var siteLanguage = document.documentElement.lang;
 
-jQuery("[id$='_eerste_huurdag']").on("change", function () {
+jQuery("[id$='eerste_huurdag']").on("change", function () {
   var eersteHuurdagDate = new parseDate(jQuery(this).val());
-  var laatsteHuurdagDate = new parseDate(
-    jQuery("[id$='_laatste_huurdag']").val()
-  );
+  var laatsteHuurdagDate = new parseDate(jQuery("[id$='retourdatum']").val());
 
   if (eersteHuurdagDate > laatsteHuurdagDate) {
     alert("Waarschuwing: Eerste Huurdag should be less than Laatste Huurdag");
@@ -12,10 +10,8 @@ jQuery("[id$='_eerste_huurdag']").on("change", function () {
   }
 });
 
-jQuery("[id$='_laatste_huurdag']").on("change", function () {
-  var eersteHuurdagDate = new parseDate(
-    jQuery("[id$='_eerste_huurdag']").val()
-  );
+jQuery("[id$='retourdatum']").on("change", function () {
+  var eersteHuurdagDate = new parseDate(jQuery("[id$='eerste_huurdag']").val());
   var laatsteHuurdagDate = new parseDate(jQuery(this).val());
 
   if (laatsteHuurdagDate < eersteHuurdagDate) {

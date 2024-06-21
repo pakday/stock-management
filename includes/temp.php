@@ -1,11 +1,11 @@
 <?php
 
 // Local site keys
-$first_rental_day_meta_key_old = '_section_hh2c1aj2q4_first_rental_day';
-$last_rental_day_meta_key_old = '_section_hh2c1aj2q4_last_rental_day';
+// $first_rental_day_meta_key_old = '_section_hh2c1aj2q4_first_rental_day';
+// $last_rental_day_meta_key_old = '_section_hh2c1aj2q4_last_rental_day';
 // Client site keys
-// $first_rental_day_meta_key_old = '_section_h21t1g21h2_eerste_huurdag';
-// $last_rental_day_meta_key_old = '_section_h21t1g21h2_laatste_huurdag';
+$first_rental_day_meta_key_old = '_section_h21t1g21h2_eerste_huurdag';
+$last_rental_day_meta_key_old = '_section_h21t1g21h2_laatste_huurdag';
 
 add_action('admin_init', 'all_orders_exchange_dates');
 
@@ -59,13 +59,13 @@ function exchange_dates_meta_data($order)
 
 
 
-// add_action('admin_init', 'all_orders_reset_available');
+add_action('admin_init', 'all_orders_reset_available');
 
 function all_orders_reset_available()
 {
     $args = array(
         'limit' => -1,
-        'status' => 'processing',
+        'status' => 'any',
         'order' => 'ASC'
     );
     $orders = wc_get_orders($args);
@@ -93,10 +93,28 @@ function all_orders_reset_available()
                     $total_available_stock[$product_id] = 0;
                 }
 
-                $total_available_stock[$product_id] += $available_stock;
+                $total_available_stock[$product_id] += (int)$available_stock;
 
-                wc_update_order_item_meta($item_id, '_available_stock_old', $available_stock);
-                wc_update_order_item_meta($item_id, '_available_stock', 0);
+                // wc_update_order_item_meta($item_id, '_available_stock', 0);
+                if (!empty($item_id)) {
+                    wc_delete_order_item_meta($item_id, '_available_stock');
+                    wc_delete_order_item_meta($item_id, '_available_stock_old');
+                    wc_delete_order_item_meta($item_id, '_unavailable_stock');
+                    wc_delete_order_item_meta($item_id, '_total_available_stock');
+                    wc_delete_order_item_meta($item_id, '_total_unavailable_stock');
+                }
+            }
+        }
+    }
+
+    foreach ($orders as $order) {
+        foreach ($order->get_items() as $item_id => $item) {
+            if (!empty($item_id)) {
+                wc_delete_order_item_meta($item_id, '_available_stock');
+                wc_delete_order_item_meta($item_id, '_available_stock_old');
+                wc_delete_order_item_meta($item_id, '_unavailable_stock');
+                wc_delete_order_item_meta($item_id, '_total_available_stock');
+                wc_delete_order_item_meta($item_id, '_total_unavailable_stock');
             }
         }
     }
@@ -130,7 +148,7 @@ function all_orders_last_status_date()
 {
     $args = array(
         'limit' => -1,
-        'status' => 'processing',
+        'status' => 'any',
         'order' => 'ASC'
     );
     $orders = wc_get_orders($args);
@@ -163,6 +181,4 @@ function all_orders_last_status_date()
 
         $order->save();
     }
-
-    // error_log_console('note_content', $orders);
 }
